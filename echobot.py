@@ -2,7 +2,6 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import requests
 import re
-from telegram import ReplyMarkup
 
 
 # Enable logging
@@ -12,6 +11,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 IDs = []
 url = 'https://e.nariman.io/events'
+api = requests.get(url)
+All_events = re.findall(r'(?<=id\"\:\").+?(?=\")', api.text)
 
 
 # Define a few command handlers. These usually take the two arguments bot and
@@ -20,24 +21,53 @@ def start(bot, update):
     """Send a message when the command /start is issued."""
     update.message.reply_text("Let's roll")
 
+def get_all_events(bot, update):
+    """To get all the events"""
+    global All_events
+    update.message.reply_text(All_events)
+
 def add_event(bot, update):
     """Add an event into ids to get it back later"""
-    update.message.reply_text("Give the ID of the event you want to add")
-    update.message.ForceReply("kekas")
+    global IDs
+    global All_events
+    the_id = re.search('(?<=\/add\_event\s).+', update.message.text)
+    if All_events.count(the_id.group()) > 0:
+        if IDs.count(the_id.group()) < 1:
+            IDs.append(the_id.group())
+            update.message.reply_text('We added your ID: "'+ the_id.group() +'"')
+        else:
+            update.message.reply_text("you already have this ID")
+    else:
+        update.message.reply_text("your ID does not exist")
 
+def del_event(bot, update):
+    """Delete an event in the list of the IDs"""
+    global IDs
+    the_id = re.search('(?<=\/del\_event\s).+', update.message.text)
+    if IDs.count(the_id.group()) > 0:
+        IDs.remove(the_id.group())
+        update.message.reply_text('We removed the ID: "'+ the_id.group() +'" from your list')
+    else:
+        update.message.reply_text("There is no such ID")
+
+def list(bot, update):
+    """To get the list of the IDs the user have"""
+    global IDs
+    update.message.reply_text(IDs)
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('These are our commands:')
+    update.message.reply_text('These are our commands:\n/start: to roll with us'
+                              '\n/help: to get to this selection'
+                              '\n/add_event: to add an event you want to visit'
+                              '\n/del_event: to remove an event you dont want to visit any more, or youve visited it already'
+                              '\n/list: to get the list of your events you want to visit'
+                              '\n/get_all_events: to see the list of all events')
 
 
 def echo(bot, update):
     """Echo the user message."""
-    global IDs
-    api = requests.get(url)
-    all_ids = re.findall(r'(?<=id\"\:\").+?(?=\")', api.text)
-    update.message.reply_text(all_ids)
-    update.message.reply_text(IDs)
+    update.message.reply_text('type: /help to know more')
 
 
 def error(bot, update, error):
@@ -57,6 +87,9 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("add_event", add_event))
+    dp.add_handler(CommandHandler("del_event", del_event))
+    dp.add_handler(CommandHandler("list", list))
+    dp.add_handler(CommandHandler("get_all_events", get_all_events))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
