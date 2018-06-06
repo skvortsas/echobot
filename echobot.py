@@ -2,6 +2,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import requests
 import re
+import json
 
 
 # Enable logging
@@ -12,19 +13,26 @@ logger = logging.getLogger(__name__)
 IDs = []
 url = 'https://e.nariman.io/events'
 api = requests.get(url)
-All_events = re.findall(r'(?<=id\"\:\").+?(?=\")', api.text)
+All_events = []
 
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
 def start(bot, update):
     """Send a message when the command /start is issued."""
+    global  api
+    global All_events
     update.message.reply_text("Let's roll")
+    data = json.loads(api.text)
+    for event in data['data']:
+       All_events.append(event['id'])
 
 def get_all_events(bot, update):
     """To get all the events"""
-    global All_events
-    update.message.reply_text(All_events)
+    global api
+    data = json.loads(api.text)
+    for event in data['data']:
+       update.message.reply_text(event['id'])
 
 def add_event(bot, update):
     """Add an event into ids to get it back later"""
