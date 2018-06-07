@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 IDs = []
 url = 'https://e.nariman.io/events'
 api = requests.get(url)
-All_events = []
+All_events_ID = []
+All_events_Names = []
 
 
 # Define a few command handlers. These usually take the two arguments bot and
@@ -21,11 +22,15 @@ All_events = []
 def start(bot, update):
     """Send a message when the command /start is issued."""
     global  api
-    global All_events
+    global All_events_ID
+    global All_events_Names
     update.message.reply_text("Let's roll")
     data = json.loads(api.text)
     for event in data['data']:
-       All_events.append(event['id'])
+        All_events_ID.append(event['id'])
+        All_events_Names.append(event['name'])
+        update.message.reply_text(All_events_ID)
+        update.message.reply_text(All_events_Names)
 
 def get_all_events(bot, update):
     """To get all the events"""
