@@ -29,20 +29,15 @@ def start(bot, update):
     for event in data['data']:
         All_events_ID.append(event['id'])
         All_events_Names.append(event['name'])
-        update.message.reply_text(All_events_ID)
-        update.message.reply_text(All_events_Names)
 
 def get_all_events(bot, update):
     """To get all the events"""
-    global api
-    data = json.loads(api.text)
-    for event in data['data']:
-       update.message.reply_text(event['id'])
+    global All_events_Names
+    update.message.reply_text(All_events_Names)
 
 def add_event(bot, update):
     """Add an event into ids to get it back later"""
     global IDs
-    global All_events
     the_id = re.search('(?<=\/add\_event\s).+', update.message.text)
     if All_events.count(the_id.group()) > 0:
         if IDs.count(the_id.group()) < 1:
