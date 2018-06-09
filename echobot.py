@@ -5,7 +5,6 @@ import logging
 import requests
 import re
 import json
-import govno
 
 
 # Enable logging
