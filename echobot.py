@@ -18,15 +18,18 @@ api = requests.get(url)
 IDs = []
 All_events_ID = []
 All_events_Names = []
-n = step_event_list = 5
+n = step_event_list = 3
 current_page = 1
 count_message_del = 0
 i = 0
-
+user_chat_id = ""
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
 def start(bot, update):
+    global user_chat_id
     reply_keyboard = [['event list'], ['add event'], ['my events']]
+    user_chat_id = update.message.chat_id
+    print(user_chat_id)
     update.message.reply_text(
         'Выберите одну из команд\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
@@ -37,6 +40,7 @@ def event_list(bot, update):
     global n
     global count_message_del
     global i
+    global user_chat_id
     n = step_event_list * current_page
     keyboard = [[],[]]
     if(current_page == 1):
@@ -51,10 +55,11 @@ def event_list(bot, update):
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 count_message_del = step_event_list
                 print("count" + str(count_message_del))
-                update.message.reply_text((str(k+1) + " " + All_events_Names[k]),reply_markup=reply_markup)
+                bot.send_message(chat_id=user_chat_id, text=str(k+1) + " " + All_events_Names[k], reply_markup=reply_markup)
 
             else:
-                update.message.reply_text(str(k+1) + " " + All_events_Names[k])
+
+                bot.send_message(chat_id=user_chat_id, text=str(k+1) + " " + All_events_Names[k])
                 keyboard[0].append((InlineKeyboardButton(k+1, callback_data=All_events_ID[k])))
 
     else:
@@ -62,21 +67,40 @@ def event_list(bot, update):
             if(k == i-1):
                 keyboard[0].append((InlineKeyboardButton(k+1, callback_data=All_events_ID[k])))
                 reply_markup = InlineKeyboardMarkup(keyboard)
+                keyboard[1].append((InlineKeyboardButton('<-', callback_data="previous")))
+                keyboard[1].append((InlineKeyboardButton('->', callback_data="next")))
                 count_message_del =step_event_list -  (n - i)
                 print("cout" +  str(count_message_del))
-                update.message.reply_text((str(k+1) + " " + All_events_Names[k]),reply_markup=reply_markup)
+                bot.send_message(chat_id=user_chat_id, text=str(k+1) + " " + All_events_Names[k],reply_markup=reply_markup)
             else:
-                update.message.reply_text(str(k+1) + " " + All_events_Names[k])
+                bot.send_message(chat_id=user_chat_id, text=str(k+1) + " " + All_events_Names[k])
                 keyboard[0].append((InlineKeyboardButton(k+1, callback_data=All_events_ID[k])))
 
 def button(bot, update):
     query = update.callback_query
-
+    global current_page
     for k in range(count_message_del):
         bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id-k)
-    reply_keyboard = [['sign up'], ['back']]
-    bot.send_message(chat_id=query.message.chat_id, text=get_info(query.data),reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
-    return INFO
+    if(query.data == "previous"):
+        if(current_page == 1):
+            tmp = divmod(i, step_event_list)
+            if(tmp[1] == 0):
+                current_page = tmp[0]
+            else:
+                current_page = tmp[0] + 1
+        else:
+            current_page-=1
+        event_list(bot, update)
+
+    elif(query.data == "next"):
+        if(current_page * step_event_list > i):
+            current_page = 1
+        else:
+            current_page+=1
+        event_list(bot, update)
+    else:
+        reply_keyboard = [['sign up'], ['back']]
+        bot.send_message(chat_id=query.message.chat_id, text=get_info(query.data),reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
 
 def sign_up(bot, update):
     update.message.reply_text("Я еще не сделал")
@@ -95,6 +119,8 @@ def get_info(ID):
 def get_event_ID_Names():
     api = requests.get(url)
     data = json.loads(api.text)
+    All_events_ID.clear()
+    All_events_Names.clear()
     for event in data['data']:
         All_events_ID.append(event['id'])
         All_events_Names.append(event['name'])
